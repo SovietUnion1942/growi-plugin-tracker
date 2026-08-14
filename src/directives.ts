@@ -47,6 +47,13 @@ export const trackerDirectives: Plugin<[], Root> = () => (tree) => {
       hProperties[`data-gpt-${key}`] = value;
     }
 
-    directive.data = { ...directive.data, hName, hProperties };
+    const data: Record<string, unknown> = { ...directive.data, hName, hProperties };
+    // GROWI's own echo-directive plugin already ran (it's baked into the base
+    // pipeline) and, for every leaf/text directive, set hChildren to a
+    // reconstruction of the raw "::name[...]" syntax as a fallback display for
+    // directives nobody handles. Clear it so mdast-util-to-hast falls back to
+    // converting this node's real children (the actual label) instead.
+    delete data.hChildren;
+    directive.data = data;
   });
 };

@@ -31,8 +31,11 @@ GROWIのページ上でチェックボックスをクリックすると(GROWI標
 ### カウンター
 
 ```
-::counter{id="likes-top-page" value=0 step=1}[いいね]
+::counter[いいね]{id="likes-top-page" value=0 step=1}
 ```
+
+remark-directiveの記法は「ラベル `[...]` が先、属性 `{...}` が後」の順を守ること
+(`{...}[...]` の順で書くとdirectiveとして認識されず、そのまま文字列として表示される)。
 
 - `id`: ブラウザの `localStorage` に保存するためのキー。同じ `id` を持つカウンターは
   ページを再読み込みしても値が保持される(**サーバー側には保存されない = 閲覧者ごと・
