@@ -1,11 +1,13 @@
 import { createElement, type ComponentType } from 'react';
 
-import { Counter } from './Counter';
-import { Milestone } from './Milestone';
-import { ProgressBar } from './ProgressBar';
-
 // biome-ignore lint: props coming from rehype-react are untyped by nature
 type AnyProps = Record<string, any>;
+
+export type Widgets = {
+  ProgressBar: ComponentType<AnyProps>;
+  Milestone: ComponentType<AnyProps>;
+  Counter: ComponentType<AnyProps>;
+};
 
 const readWidget = (props: AnyProps): string | undefined => props['data-gpt-widget'];
 
@@ -15,21 +17,21 @@ const readWidget = (props: AnyProps): string | undefined => props['data-gpt-widg
  * and everything else keeps rendering exactly as before — the same pattern
  * growi-plugin-datatables uses to wrap the built-in 'table' component.
  */
-export const wrapFigure = (Original?: ComponentType<AnyProps>) => {
+export const wrapFigure = (widgets: Widgets, Original?: ComponentType<AnyProps>) => {
   const Wrapped = (props: AnyProps) => {
     const widget = readWidget(props);
-    if (widget === 'progress') return createElement(ProgressBar, props);
-    if (widget === 'milestone') return createElement(Milestone, props);
+    if (widget === 'progress') return createElement(widgets.ProgressBar, props);
+    if (widget === 'milestone') return createElement(widgets.Milestone, props);
     if (Original != null) return createElement(Original, props);
     return createElement('figure', props);
   };
   return Wrapped;
 };
 
-export const wrapData = (Original?: ComponentType<AnyProps>) => {
+export const wrapData = (widgets: Widgets, Original?: ComponentType<AnyProps>) => {
   const Wrapped = (props: AnyProps) => {
     const widget = readWidget(props);
-    if (widget === 'counter') return createElement(Counter, props);
+    if (widget === 'counter') return createElement(widgets.Counter, props);
     if (Original != null) return createElement(Original, props);
     return createElement('data', props);
   };
