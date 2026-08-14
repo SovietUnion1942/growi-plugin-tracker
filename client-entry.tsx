@@ -7,6 +7,8 @@ declare const growiFacade: any;
 const PLUGIN_ID = 'growi-plugin-tracker';
 
 const extendOptions = (options: any) => {
+  // RendererOptions.components is typed optional — some generators may omit it
+  options.components ??= {};
   options.remarkPlugins.push(trackerDirectives);
   options.components.figure = wrapFigure(options.components.figure);
   options.components.data = wrapData(options.components.data);
