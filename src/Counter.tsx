@@ -1,33 +1,34 @@
 import type { ComponentType, ReactNode } from 'react';
 
 import { COUNTER_API_BASE_URL } from './config';
+import { getCurrentUsername } from './currentUser';
 import './styles.css';
 
 type Props = {
   'data-gpt-id'?: string;
-  'data-gpt-value'?: string;
-  'data-gpt-step'?: string;
   children?: ReactNode;
 };
 
 // biome-ignore lint: only used as a structural type for the hooks we pull off it
 type ReactRuntime = typeof import('react');
 
-type CounterResponse = { id: string; value: number | null; updated_at: string | null };
+type LikeResponse = { id: string; count: number; liked: boolean };
 
-const getCounter = async (id: string): Promise<CounterResponse> => {
-  const res = await fetch(`${COUNTER_API_BASE_URL}/counters/${encodeURIComponent(id)}`);
-  if (!res.ok) throw new Error(`GET /counters/${id} failed: ${res.status}`);
+const fetchLikeStatus = async (id: string, username: string | null): Promise<LikeResponse> => {
+  const query = username != null ? `?username=${encodeURIComponent(username)}` : '';
+  const res = await fetch(`${COUNTER_API_BASE_URL}/counters/${encodeURIComponent(id)}/likes${query}`);
+  if (!res.ok) throw new Error(`GET likes failed: ${res.status}`);
   return res.json();
 };
 
-const incrementCounter = async (id: string, delta: number, initial: number): Promise<CounterResponse> => {
-  const res = await fetch(`${COUNTER_API_BASE_URL}/counters/${encodeURIComponent(id)}/increment`, {
+const postLike = async (id: string, username: string, like: boolean): Promise<LikeResponse> => {
+  const path = like ? 'like' : 'unlike';
+  const res = await fetch(`${COUNTER_API_BASE_URL}/counters/${encodeURIComponent(id)}/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ delta, initial }),
+    body: JSON.stringify({ username }),
   });
-  if (!res.ok) throw new Error(`POST /counters/${id}/increment failed: ${res.status}`);
+  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
   return res.json();
 };
 
@@ -37,70 +38,80 @@ export const createCounter = (React: ReactRuntime): ComponentType<Props> => {
 
   return function Counter(props: Props) {
     const id = props['data-gpt-id'];
-    const initial = Number(props['data-gpt-value'] ?? 0) || 0;
-    const step = Number(props['data-gpt-step'] ?? 1) || 1;
 
-    const [count, setCount] = useState<number>(initial);
-    // Guards against an older in-flight response clobbering the display if a
-    // later click's response resolves first.
+    const [count, setCount] = useState(0);
+    const [liked, setLiked] = useState(false);
+    const [username, setUsername] = useState<string | null>(null);
+    // Guards against an older in-flight response clobbering a newer one.
     const seqRef = useRef(0);
 
-    // With an id, adopt the shared server value once on mount; without one,
-    // stay purely local (no network call at all — a deliberate fallback for
-    // casual counters nobody needs shared).
+    // With an id, load the shared like count + this user's own like state.
+    // Without one, this is a purely local 0/1 toggle (no network, no user
+    // lookup needed) — kept as a fallback for casual, non-shared counters.
     useEffect(() => {
       if (id == null) return undefined;
       let cancelled = false;
-      getCounter(id)
-        .then((res) => {
-          if (cancelled || res.value == null) return;
-          setCount(res.value);
+
+      getCurrentUsername()
+        .then((name) => {
+          if (cancelled) return undefined;
+          setUsername(name);
+          return fetchLikeStatus(id, name);
         })
-        .catch((err) => console.error('[growi-plugin-tracker] failed to load counter', id, err));
+        .then((res) => {
+          if (cancelled || res == null) return;
+          setCount(res.count);
+          setLiked(res.liked);
+        })
+        .catch((err) => console.error('[growi-plugin-tracker] failed to load like status', id, err));
+
       return () => {
         cancelled = true;
       };
     }, [id]);
 
-    const applyDelta = (delta: number): void => {
+    const toggle = (): void => {
       if (id == null) {
-        setCount((c) => Math.max(0, c + delta));
+        // Local-only fallback: just flip between 0 and 1.
+        setLiked((l) => {
+          const next = !l;
+          setCount(next ? 1 : 0);
+          return next;
+        });
         return;
       }
 
-      // Optimistic local update for instant feedback, then reconcile with
-      // the server's authoritative (atomically-clamped) value.
-      setCount((c) => Math.max(0, c + delta));
+      // Not logged in, or the lookup hasn't resolved yet — nothing to attribute the like to.
+      if (username == null) return;
+
+      const nextLiked = !liked;
+      // Optimistic update, then reconcile with the server's authoritative count.
+      setLiked(nextLiked);
+      setCount((c) => c + (nextLiked ? 1 : -1));
+
       const seq = ++seqRef.current;
-      incrementCounter(id, delta, initial)
+      postLike(id, username, nextLiked)
         .then((res) => {
-          if (seqRef.current !== seq || res.value == null) return;
-          setCount(res.value);
+          if (seqRef.current !== seq) return;
+          setCount(res.count);
+          setLiked(res.liked);
         })
-        .catch((err) => console.error('[growi-plugin-tracker] failed to save counter', id, err));
+        .catch((err) => console.error('[growi-plugin-tracker] failed to save like', id, err));
     };
 
+    const disabled = id != null && username == null;
+
     return (
-      <span className="gpt-counter">
+      <button
+        type="button"
+        className={`gpt-counter gpt-like${liked ? ' gpt-like-active' : ''}`}
+        onClick={toggle}
+        disabled={disabled}
+        aria-pressed={liked}
+      >
         {props.children != null && <span className="gpt-counter-label">{props.children}</span>}
-        <button
-          type="button"
-          className="gpt-counter-btn"
-          onClick={() => applyDelta(-step)}
-          aria-label="decrement"
-        >
-          −
-        </button>
         <span className="gpt-counter-value">{count}</span>
-        <button
-          type="button"
-          className="gpt-counter-btn"
-          onClick={() => applyDelta(step)}
-          aria-label="increment"
-        >
-          ＋
-        </button>
-      </span>
+      </button>
     );
   };
 };
