@@ -22,6 +22,8 @@ const WIDGET_TAGS: Record<string, string> = {
   progress: 'figure',
   milestone: 'figure',
   counter: 'data',
+  vote: 'data',
+  'wiki-gap-suggestions': 'figure',
 };
 
 export const trackerDirectives: Plugin<[], Root> = () => (tree) => {

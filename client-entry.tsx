@@ -2,6 +2,8 @@ import { trackerDirectives } from './src/directives';
 import { wrapData, wrapFigure, type Widgets } from './src/components';
 import { createCounter } from './src/Counter';
 import { createMilestone } from './src/Milestone';
+import { createVote } from './src/Vote';
+import { createWikiGapSuggestions } from './src/WikiGapSuggestions';
 import { ProgressBar } from './src/ProgressBar';
 
 // biome-ignore lint: injected onto window by GROWI at runtime, no shipped types
@@ -21,6 +23,8 @@ const activate = (): void => {
     ProgressBar,
     Milestone: createMilestone(growiFacade.react),
     Counter: createCounter(growiFacade.react),
+    Vote: createVote(growiFacade.react),
+    WikiGapSuggestions: createWikiGapSuggestions(growiFacade.react),
   };
 
   const { optionsGenerators } = growiFacade.markdownRenderer;
