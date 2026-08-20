@@ -24,7 +24,7 @@ export const wrapFigure = (widgets: Widgets, Original?: ComponentType<AnyProps>)
     const widget = readWidget(props);
     if (widget === 'progress') return createElement(widgets.ProgressBar, props);
     if (widget === 'milestone') return createElement(widgets.Milestone, props);
-    if (widget === 'wiki-gap-suggestions') return createElement(widgets.WikiGapSuggestions, props);
+    if (widget === 'wiki-page-indications') return createElement(widgets.WikiGapSuggestions, props);
     if (Original != null) return createElement(Original, props);
     return createElement('figure', props);
   };

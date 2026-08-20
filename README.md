@@ -69,13 +69,18 @@ GROWIのページ上でチェックボックスをクリックすると(GROWI標
 ### Wiki指摘一覧
 
 ```
-:::wiki-gap-suggestions
+:::wiki-page-indications
 :::
 ```
 
 Wiki巡回機能(`growi-socialcredit-API`)が出した未解決(`open`)の指摘を一覧表示する。
 中身は書かなくてよい(`:::`〜`:::`は空でOK)。トップページなど任意のページに置くだけで、
 各指摘のタイトル(指摘ページへのリンク)・要約・賛成/反対ボタンがその場に並ぶ。
+
+注意: `wiki-gap-suggestions`という名前は使わないこと。GROWI本体(`features/wiki-gap-suggestions`、
+検索で無結果だった質問を集計する別機能)が既にそのdirective名を使っており、後から
+`remarkPlugins.push`するこのプラグイン側が本体の`hName`書き換えを上書きしてしまい、
+本体側の表示が壊れる。
 
 ## セットアップ
 

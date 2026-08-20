@@ -23,7 +23,7 @@ const WIDGET_TAGS: Record<string, string> = {
   milestone: 'figure',
   counter: 'data',
   vote: 'data',
-  'wiki-gap-suggestions': 'figure',
+  'wiki-page-indications': 'figure',
 };
 
 export const trackerDirectives: Plugin<[], Root> = () => (tree) => {
